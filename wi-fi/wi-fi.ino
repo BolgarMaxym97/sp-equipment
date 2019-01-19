@@ -24,46 +24,54 @@ const char* password = "415689313M";
 float humanity, temperature ;
 
 void setup(void){     
-  SPI.setHwCs(true);
-  SPI.begin();
-  SPI.setDataMode(SPI_MODE0);
-  SPI.setBitOrder(MSBFIRST);   
-  
-  radio.begin();                                        
-  radio.setChannel(5);
-  radio.setDataRate     (RF24_1MBPS);
-  radio.setPALevel      (RF24_PA_HIGH);
-  radio.openReadingPipe (1, 0x33);
-  radio.startListening  ();
-  Serial.begin(115200);  
-  
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);  
-  while (WiFi.status() != WL_CONNECTED) {
-  delay(500);
-  Serial.print(".");
-  Serial.print(radio.available());
-  } 
-  Serial.println(WiFi.localIP());      
+  Serial.begin(115200);
+  setSpiSettings();
+  setRadioSettings();
+  setWiFiSettings();
 }
   
 void loop(void){
- float data[2];   
- if(radio.available()){
-  radio.read(&data, sizeof(data));
-  humanity=data[0]; 
-  temperature=data[1];  
-  Serial.println(temperature);   
+    float data[2];   
+    if(radio.available()){
+        radio.read(&data, sizeof(data));
+        humanity=data[0]; 
+        temperature=data[1];  
+        Serial.println(temperature);   
+        
+        HTTPClient http;
+        http.begin("http://api.smart-plants.me/data-fill");
+        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        int httpCode = http.POST("data="+String(temperature)+"&user_id=1&sensor_id=1&node_id=1&type=temperature");
+        String payload = http.getString();
+        Serial.println(httpCode);
+        Serial.println(payload);
+        http.end();
+    }
+}
 
-  HTTPClient http;
-  http.begin("http://api.smart-plants.me/data-fill");
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  int httpCode = http.POST("data="+String(temperature)+"&user_id=1&sensor_id=1&node_id=1&type=temperature");
-  String payload = http.getString();
-  Serial.println(httpCode);
-  Serial.println(payload);
-  http.end();
-  }
+void setSpiSettings(){
+    SPI.setHwCs(true);
+    SPI.begin();
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+}
+void setRadioSettings(){
+    radio.begin();
+    radio.setChannel(5);
+    radio.setDataRate(RF24_1MBPS);
+    radio.setPALevel(RF24_PA_HIGH);
+    radio.openReadingPipe(1, 0x33);
+    radio.startListening();
+    Serial.print(radio.available());
+}
+void setWiFiSettings(){
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println(WiFi.localIP());
 }
 
 
