@@ -17,35 +17,24 @@
 #include <string.h> 
 #include <Hash.h>   
 
-RF24 radio(4, 15);    // Set up nRF24L01 radio on SPI bus plus pins 4 for CE and 15 for CSN
+RF24 radio(4, 15);
 
 const char* ssid = "kyivstar56";
 const char* password = "415689313M";  
 float humanity, temperature ;
+float data[2];
 
 void setup(void){     
-  Serial.begin(115200);
-  setSpiSettings();
-  setRadioSettings();
-  setWiFiSettings();
+    Serial.begin(115200);
+    setSpiSettings();
+    setRadioSettings();
+    setWiFiSettings();
 }
   
-void loop(void){
-    float data[2];   
+void loop(void){ 
     if(radio.available()){
-        radio.read(&data, sizeof(data));
-        humanity=data[0]; 
-        temperature=data[1];  
-        Serial.println(temperature);   
-        
-        HTTPClient http;
-        http.begin("http://api.smart-plants.me/data-fill");
-        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        int httpCode = http.POST("data="+String(temperature)+"&user_id=1&sensor_id=1&node_id=1&type=temperature");
-        String payload = http.getString();
-        Serial.println(httpCode);
-        Serial.println(payload);
-        http.end();
+        collectData();
+        sendDataToServer();
     }
 }
 
@@ -74,6 +63,21 @@ void setWiFiSettings(){
     Serial.println(WiFi.localIP());
 }
 
+void collectData() {
+    radio.read(&data, sizeof(data));
+    humanity=data[0]; 
+    temperature=data[1];  
+    Serial.println(temperature);   
+    Serial.println(humanity);   
+}
 
-
- 
+void sendDataToServer() {
+    HTTPClient http;
+    http.begin("http://api.smart-plants.me/data-fill");
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    int httpCode = http.POST("data={\"temperature\": "+String(temperature)+", \"humanity\": "+String(humanity)+"}&user_id=1&sensor_id=1&node_id=1");
+    String payload = http.getString();
+    Serial.println(httpCode);
+    Serial.println(payload);
+    http.end();
+}
