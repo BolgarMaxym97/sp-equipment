@@ -75,7 +75,7 @@ void sendDataToServer() {
     HTTPClient http;
     http.begin("http://api.smart-plants.me/data-fill");
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    int httpCode = http.POST("data={\"temperature\": "+String(temperature)+", \"humanity\": "+String(humanity)+"}&user_id=1&sensor_id=1&node_id=1");
+    int httpCode = http.POST("values[temperature]="+String(temperature)+"&values[humanity]="+String(humanity)+"&user_id=1&sensor_id=1&node_id=1");
     String payload = http.getString();
     Serial.println(httpCode);
     Serial.println(payload);
