@@ -5,6 +5,7 @@
 #define DHTPIN 2
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "LowPower.h"
 
 #define PIN_DS18B20 2
 #define PIN_HUMANITY A0
@@ -12,12 +13,14 @@
 #define MINVALUESOILMOISTURE 220
 // значение критической сухости
 #define MAXVALUESOILMOISTURE 900
+#define TIMEOUT_COUNT_BY_8_SEC 150
 
 RF24   radio(9, 10);
 OneWire oneWire(PIN_DS18B20);
 DallasTemperature dallasSensors(&oneWire);
 DeviceAddress sensorAddress;
 float data[2];
+int lowPowerCounter = 0;
 
 void setup(){
     Serial.begin(9600);
@@ -26,9 +29,14 @@ void setup(){
 }
 
 void loop(){
-    collectData();
-    sendData();
-    delay(60000 * 20);
+    if (lowPowerCounter <= TIMEOUT_COUNT_BY_8_SEC) {
+        lowPowerCounter++;
+        sleep();
+    } else {
+        collectData();
+        sendData();
+        lowPowerCounter = 0;
+      }
 }
   
 float getTemperature(DeviceAddress deviceAddress){
@@ -73,4 +81,8 @@ void sendData() {
     } else {
         Serial.println("Not sended");
     }
+}
+
+void sleep() {
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
 }
