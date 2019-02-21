@@ -2,26 +2,15 @@
 #include <nRF24L01.h>
 #include "RF24.h"
 #include "DHT.h"
-#define DHTPIN 2
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include "LowPower.h"
 
-#define PIN_DS18B20 2
-#define PIN_HUMANITY A0
-// значение полного полива
-#define MINVALUESOILMOISTURE 220
-// значение критической сухости
-#define MAXVALUESOILMOISTURE 900
-#define TIMEOUT_COUNT_BY_8_SEC 150
+#define DHTPIN 2
+#define  gerconPin  3
 
 RF24   radio(9, 10);
-OneWire oneWire(PIN_DS18B20);
-DallasTemperature dallasSensors(&oneWire);
-DeviceAddress sensorAddress;
-float data[2];
+DHT dht(DHTPIN, DHT22);
+float data[3];
 int lowPowerCounter = 0;
-
+unsigned long timing;
 void setup(){
     Serial.begin(9600);
     setRadioSettings();
@@ -29,19 +18,11 @@ void setup(){
 }
 
 void loop(){
-    if (lowPowerCounter <= TIMEOUT_COUNT_BY_8_SEC) {
-        lowPowerCounter++;
-        sleep();
-    } else {
-        collectData();
-        sendData();
-        lowPowerCounter = 0;
-      }
-}
-  
-float getTemperature(DeviceAddress deviceAddress){
-    float tempC = dallasSensors.getTempC(deviceAddress);
-    return tempC;
+    if (millis() - timing > 60000 * 10) {
+      timing = millis();
+      collectData();
+      sendData();
+    }
 }
 
 void setRadioSettings() {
@@ -53,36 +34,31 @@ void setRadioSettings() {
 }
 
 void setSensorsSettings() {
-    Serial.print("Ищем устройства...");
-    dallasSensors.begin();
-    Serial.print("Найдено ");
-    Serial.print(dallasSensors.getDeviceCount(), DEC);
-    Serial.println(" устройств.");
-    if (!dallasSensors.getAddress(sensorAddress, 0)) {
-        Serial.println("Не можем найти первое устройство");
-    }
-    dallasSensors.setResolution(sensorAddress, 12);
+    dht.begin();
+    pinMode(gerconPin, INPUT);
 }
 
 void collectData() {
-    Serial.println("Измеряем температуру...");
-    dallasSensors.requestTemperatures();
-    float temperature = getTemperature(sensorAddress);
-    int humanity = map(analogRead(PIN_HUMANITY), 1025, 110, 0, 100);
-    Serial.println(temperature);
-    Serial.println(humanity);
-    data[0] = humanity;
-    data[1] = temperature;
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+    byte gercon = digitalRead(gerconPin);
+    data[0] = h;
+    data[1] = t;
+    if (gercon == HIGH) {
+      data[2] = 1;
+    }
+   else {
+      data[2] = 0;
+    }
 }
 
 void sendData() {
+  Serial.println(data[0]);
+    Serial.println(data[1]);
+    Serial.println(data[2]);
     if(radio.write(&data, sizeof(data))) {
         Serial.println("Sended");
     } else {
         Serial.println("Not sended");
     }
-}
-
-void sleep() {
-    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
 }

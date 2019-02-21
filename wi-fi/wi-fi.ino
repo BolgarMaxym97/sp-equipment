@@ -21,8 +21,8 @@ RF24 radio(4, 15);
 
 const char* ssid = "kyivstar56";
 const char* password = "415689313M";  
-float humanity, temperature ;
-float data[2];
+float humanity, temperature, gercon ;
+float data[3];
 
 void setup(void){     
     Serial.begin(115200);
@@ -66,7 +66,9 @@ void setWiFiSettings(){
 void collectData() {
     radio.read(&data, sizeof(data));
     humanity=data[0]; 
-    temperature=data[1];  
+    temperature=data[1]; 
+    gercon=data[2]; 
+    Serial.println(gercon);  
     Serial.println(temperature);   
     Serial.println(humanity);   
 }
@@ -75,7 +77,7 @@ void sendDataToServer() {
     HTTPClient http;
     http.begin("http://api.smart-plants.me/data-fill");
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    int httpCode = http.POST("values[1]="+String(temperature)+"&values[2]="+String(humanity));
+    int httpCode = http.POST("values[1]="+String(temperature)+"&values[2]="+String(humanity)+"&values[3]="+String(gercon));
     String payload = http.getString();
     Serial.println(httpCode);
     Serial.println(payload);
