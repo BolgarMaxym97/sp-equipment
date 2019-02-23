@@ -18,7 +18,7 @@ void setup(){
 }
 
 void loop(){
-    if (millis() - timing > 60000 * 10) {
+    if (millis() - timing > 60000 * 20) {
       timing = millis();
       collectData();
       sendData();
