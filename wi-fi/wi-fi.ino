@@ -20,7 +20,7 @@
 RF24 radio(4, 15);
 
 const char* ssid = "kyivstar56";
-const char* password = "415689313M";  
+const char* password = "";  
 float humanity, temperature, gercon ;
 float data[3];
 
